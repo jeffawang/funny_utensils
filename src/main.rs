@@ -3,13 +3,22 @@ use rand;
 
 struct Model {
     points: Vec<Point2>,
+    mouse: Point2,
+    mouse_down: bool,
 }
 
 fn model(app: &App) -> Model {
-    if app.window_count() == 0 {
-        app.new_window().event(event).view(view).build().unwrap();
+    let window_id = app.new_window().event(event).view(view).build().unwrap();
+    let window = app
+        .window(window_id)
+        .unwrap()
+        .set_cursor_icon(nannou::winit::window::CursorIcon::Crosshair);
+
+    Model {
+        points: vec![],
+        mouse: pt2(0.0, 0.0),
+        mouse_down: false,
     }
-    Model { points: vec![] }
 }
 
 fn main() {
@@ -21,16 +30,24 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {}
 fn event(app: &App, m: &mut Model, event: WindowEvent) {
     match event {
         ReceivedCharacter(_) => (),
+        MouseMoved(p) => m.mouse = p,
+        MousePressed(MouseButton::Left) => m.mouse_down = true,
+        MouseReleased(MouseButton::Left) => m.mouse_down = false,
         _ => return,
     }
 }
 
 fn view(app: &App, model: &Model, frame: Frame) {
-    frame.clear(WHITE);
+    frame.clear(IVORY);
 
     // Begin drawing
     let draw = app.draw();
 
+    let draw = draw.translate(model.mouse.extend(0.0)).translate(pt3(
+        0.0,
+        if model.mouse_down { 0.0 } else { 30.0 },
+        0.0,
+    ));
     pencil(&draw);
 
     // Write the result of our drawing to the window's frame.
