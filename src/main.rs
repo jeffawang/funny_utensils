@@ -2,7 +2,7 @@ use nannou::{color::Gradient, color::Mix, prelude::*};
 use rand;
 
 struct Model {
-    points: Vec<Point2>,
+    lines: Vec<Vec<Point2>>,
     mouse: Point2,
     mouse_down: bool,
 }
@@ -15,7 +15,7 @@ fn model(app: &App) -> Model {
         .set_cursor_icon(nannou::winit::window::CursorIcon::Crosshair);
 
     Model {
-        points: vec![],
+        lines: vec![],
         mouse: pt2(0.0, 0.0),
         mouse_down: false,
     }
@@ -25,13 +25,20 @@ fn main() {
     nannou::app(model).update(update).run();
 }
 
-fn update(_app: &App, _model: &mut Model, _update: Update) {}
+fn update(_app: &App, m: &mut Model, _update: Update) {
+    if m.mouse_down {
+        m.lines.last_mut().unwrap().push(m.mouse);
+    }
+}
 
 fn event(app: &App, m: &mut Model, event: WindowEvent) {
     match event {
         ReceivedCharacter(_) => (),
         MouseMoved(p) => m.mouse = p,
-        MousePressed(MouseButton::Left) => m.mouse_down = true,
+        MousePressed(MouseButton::Left) => {
+            m.mouse_down = true;
+            m.lines.push(vec![])
+        }
         MouseReleased(MouseButton::Left) => m.mouse_down = false,
         _ => return,
     }
@@ -43,12 +50,21 @@ fn view(app: &App, model: &Model, frame: Frame) {
     // Begin drawing
     let draw = app.draw();
 
-    let draw = draw.translate(model.mouse.extend(0.0)).translate(pt3(
-        0.0,
-        if model.mouse_down { 0.0 } else { 30.0 },
-        0.0,
-    ));
-    pencil(&draw);
+    {
+        let draw = draw.translate(model.mouse.extend(0.0)).translate(pt3(
+            0.0,
+            if model.mouse_down { 0.0 } else { 30.0 },
+            1.0,
+        ));
+        pencil(&draw);
+    }
+
+    for line in model.lines.iter() {
+        let c = rgba(0.0, 0.0, 0.0, 0.6);
+        draw.polyline()
+            .stroke_weight(2.5)
+            .points_colored(line.iter().map(|p| (p.clone(), c)));
+    }
 
     // Write the result of our drawing to the window's frame.
     draw.to_frame(app, &frame).unwrap();
