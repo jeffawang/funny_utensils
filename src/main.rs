@@ -51,9 +51,21 @@ fn view(app: &App, model: &Model, frame: Frame) {
     let draw = app.draw();
 
     {
+        let draw = draw.translate(pt3(0.0, 300.0, 0.0));
+        draw.text("Why shouldn't you write with a dull pencil?")
+            .color(BLACK)
+            .font_size(30)
+            .w(400.0);
+    }
+
+    {
         let draw = draw.translate(model.mouse.extend(0.0)).translate(pt3(
             0.0,
-            if model.mouse_down { 0.0 } else { 30.0 },
+            if model.mouse_down {
+                -TIPHEIGHT / 4.0 / 2.0
+            } else {
+                30.0
+            },
             1.0,
         ));
         pencil(&draw);
@@ -62,7 +74,7 @@ fn view(app: &App, model: &Model, frame: Frame) {
     for line in model.lines.iter() {
         let c = rgba(0.0, 0.0, 0.0, 0.6);
         draw.polyline()
-            .stroke_weight(2.5)
+            .stroke_weight(3.0)
             .points_colored(line.iter().map(|p| (p.clone(), c)));
     }
 
@@ -70,25 +82,26 @@ fn view(app: &App, model: &Model, frame: Frame) {
     draw.to_frame(app, &frame).unwrap();
 }
 
+const PENCILHEIGHT: f32 = 500.0;
+const WIDTH: f32 = 50.0;
+const TIPHEIGHT: f32 = 100.0;
 fn pencil(draw: &Draw) {
-    const PENCILHEIGHT: f32 = 500.0;
-    const WIDTH: f32 = 50.0;
-    const TIPHEIGHT: f32 = 100.0;
-
-    let draw = draw.scale(0.4).rotate(deg_to_rad(-30.0));
+    let draw = draw.scale(1.0).rotate(deg_to_rad(-30.0));
 
     // pencil tip
-    draw.tri().color(BLANCHEDALMOND).points(
+    draw.quad().color(BLANCHEDALMOND).points(
         pt2(-WIDTH / 2.0, TIPHEIGHT),
         pt2(WIDTH / 2.0, TIPHEIGHT),
-        pt2(0.0, 0.0),
+        pt2(WIDTH / 2.0 / 4.0, TIPHEIGHT / 4.0),
+        pt2(-WIDTH / 2.0 / 4.0, TIPHEIGHT / 4.0),
     );
 
     // graphite tip
-    draw.tri().color(BLACK).points(
+    draw.quad().color(BLACK).points(
         pt2(-WIDTH / 2.0 / 4.0, TIPHEIGHT / 4.0),
         pt2(WIDTH / 2.0 / 4.0, TIPHEIGHT / 4.0),
-        pt2(0.0, 0.0),
+        pt2(WIDTH / 2.0 / 4.0 / 2.0, TIPHEIGHT / 4.0 / 2.0),
+        pt2(-WIDTH / 2.0 / 4.0 / 2.0, TIPHEIGHT / 4.0 / 2.0),
     );
 
     // pencil body
