@@ -1,24 +1,22 @@
-use nannou::{color::Gradient, color::Mix, prelude::*};
+use nannou::prelude::*;
 use rand;
 
+#[derive(Default)]
 struct Model {
     lines: Vec<Vec<Point2>>,
     mouse: Point2,
+    pmouse: Point2,
+    angle: f32,
     mouse_down: bool,
 }
 
 fn model(app: &App) -> Model {
     let window_id = app.new_window().event(event).view(view).build().unwrap();
-    let window = app
-        .window(window_id)
+    app.window(window_id)
         .unwrap()
         .set_cursor_icon(nannou::winit::window::CursorIcon::Crosshair);
 
-    Model {
-        lines: vec![],
-        mouse: pt2(0.0, 0.0),
-        mouse_down: false,
-    }
+    Model::default()
 }
 
 fn main() {
@@ -29,12 +27,24 @@ fn update(_app: &App, m: &mut Model, _update: Update) {
     if m.mouse_down {
         m.lines.last_mut().unwrap().push(m.mouse);
     }
+    // tip is always at mouse
+    let tip = m.mouse;
+    // end is at previous tip + previous angle
+    let end = m.pmouse + pt2(1.0, 0.0).rotate(m.angle);
+    // rotate angle to the end is roughly in the same spot
+    m.angle += end.angle_between(tip).max(0.0);
+    // slowly try to get back to a target angle
+    let target = PI / 3.0;
+    m.angle += (target - m.angle) / 10.0;
 }
 
-fn event(app: &App, m: &mut Model, event: WindowEvent) {
+fn event(_app: &App, m: &mut Model, event: WindowEvent) {
     match event {
         ReceivedCharacter(_) => (),
-        MouseMoved(p) => m.mouse = p,
+        MouseMoved(p) => {
+            m.pmouse = m.mouse;
+            m.mouse = p;
+        }
         MousePressed(MouseButton::Left) => {
             m.mouse_down = true;
             m.lines.push(vec![])
@@ -59,15 +69,20 @@ fn view(app: &App, model: &Model, frame: Frame) {
     }
 
     {
-        let draw = draw.translate(model.mouse.extend(0.0)).translate(pt3(
-            0.0,
-            if model.mouse_down {
-                -TIPHEIGHT / 4.0 / 2.0
-            } else {
-                30.0
-            },
-            1.0,
-        ));
+        let draw = draw
+            .translate(model.mouse.extend(0.0))
+            .translate(pt3(
+                0.0,
+                if model.mouse_down {
+                    -TIPHEIGHT / 4.0 / 2.0
+                } else {
+                    30.0
+                },
+                1.0,
+            ))
+            .scale(0.4)
+            .rotate(model.angle);
+
         pencil(&draw);
     }
 
@@ -86,8 +101,8 @@ const PENCILHEIGHT: f32 = 500.0;
 const WIDTH: f32 = 50.0;
 const TIPHEIGHT: f32 = 100.0;
 fn pencil(draw: &Draw) {
-    let draw = draw.scale(1.0).rotate(deg_to_rad(-30.0));
-
+    // rotate draw to make it easier
+    let draw = draw.rotate(-PI / 2.0);
     // pencil tip
     draw.quad().color(BLANCHEDALMOND).points(
         pt2(-WIDTH / 2.0, TIPHEIGHT),
