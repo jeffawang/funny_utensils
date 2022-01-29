@@ -32,7 +32,7 @@ fn update(_app: &App, m: &mut Model, _update: Update) {
     // end is at previous tip + previous angle
     let end = m.pmouse + pt2(1.0, 0.0).rotate(m.angle);
     // rotate angle to the end is roughly in the same spot
-    m.angle += end.angle_between(tip);
+    m.angle += end.angle_between(tip).max(0.0);
     // slowly try to get back to a target angle
     let target = PI / 3.0;
     m.angle += (target - m.angle) / 10.0;
