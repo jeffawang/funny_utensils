@@ -102,20 +102,23 @@ const TIPHEIGHT: f32 = 100.0;
 fn pencil(draw: &Draw) {
     // rotate draw to make it easier
     let draw = draw.rotate(-PI / 2.0);
+
+    // graphite tip
+    draw.quad().color(BLACK).points(
+        pt2(-WIDTH / 2.0 / 4.0, TIPHEIGHT / 4.0 / 2.0),
+        pt2(WIDTH / 2.0 / 4.0, TIPHEIGHT / 4.0 / 2.0),
+        pt2(WIDTH / 2.0 / 4.0 / 2.0, 0.0),
+        pt2(-WIDTH / 2.0 / 4.0 / 2.0, 0.0),
+    );
+
+    let draw = draw.translate(pt3(0.0, TIPHEIGHT / 4.0 / 2.0, 0.0));
+
     // pencil tip
     draw.quad().color(BLANCHEDALMOND).points(
         pt2(-WIDTH / 2.0, TIPHEIGHT),
         pt2(WIDTH / 2.0, TIPHEIGHT),
-        pt2(WIDTH / 2.0 / 4.0, TIPHEIGHT / 4.0),
-        pt2(-WIDTH / 2.0 / 4.0, TIPHEIGHT / 4.0),
-    );
-
-    // graphite tip
-    draw.quad().color(BLACK).points(
-        pt2(-WIDTH / 2.0 / 4.0, TIPHEIGHT / 4.0),
-        pt2(WIDTH / 2.0 / 4.0, TIPHEIGHT / 4.0),
-        pt2(WIDTH / 2.0 / 4.0 / 2.0, TIPHEIGHT / 4.0 / 2.0),
-        pt2(-WIDTH / 2.0 / 4.0 / 2.0, TIPHEIGHT / 4.0 / 2.0),
+        pt2(WIDTH / 2.0 / 4.0, 0.0),
+        pt2(-WIDTH / 2.0 / 4.0, 0.0),
     );
 
     // pencil body
