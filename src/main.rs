@@ -78,15 +78,7 @@ fn view(app: &App, model: &Model, frame: Frame) {
     {
         let draw = draw
             .translate(model.mouse.extend(0.0))
-            .translate(pt3(
-                0.0,
-                if model.mouse_down {
-                    -TIPHEIGHT / 4.0 / 2.0
-                } else {
-                    30.0
-                },
-                1.0,
-            ))
+            .translate(pt3(0.0, if model.mouse_down { 0.0 } else { 30.0 }, 1.0))
             .scale(0.4)
             .rotate(model.angle);
 
