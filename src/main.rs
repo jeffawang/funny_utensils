@@ -22,29 +22,36 @@ fn main() {
     nannou::app(model).update(update).run();
 }
 
-fn update(_app: &App, m: &mut Model, _update: Update) {
+fn update(app: &App, m: &mut Model, _update: Update) {
+    let pmoved = m.pmouse != m.mouse;
+    m.pmouse = m.mouse;
+    m.mouse = app.mouse.position();
+    let moved = m.pmouse != m.mouse;
+
+    // stationary is debounced -- only true if mouse not moved for 2 frames.
+    let stationary = !moved && !pmoved;
+
     if m.mouse_down {
         m.lines.last_mut().unwrap().push(m.mouse);
     }
 
-    // the target angle the pencil should be in if it were following the mouse
-    let target = match (m.pmouse - m.mouse).angle() {
-        f if f.is_nan() => PI / 3.0,
-        f => f,
-    };
+    let target;
+    if stationary {
+        target = PI / 3.0;
+    } else {
+        // the target angle the pencil should be in if it were following the mouse
+        target = match (m.pmouse - m.mouse).angle() {
+            f if f.is_nan() => m.angle,
+            f => f,
+        };
+    }
     let theta = (target - m.angle + PI) % TAU - PI;
-    m.angle += theta.clamp(-PI / 3.0, PI / 3.0) / 10.0;
-
-    // always update previous mouse
-    m.pmouse = m.mouse;
+    m.angle += theta.clamp(-PI / 3.0, PI / 3.0) / 5.0;
 }
 
 fn event(_app: &App, m: &mut Model, event: WindowEvent) {
     match event {
         ReceivedCharacter(_) => (),
-        MouseMoved(p) => {
-            m.mouse = p;
-        }
         MousePressed(MouseButton::Left) => {
             m.mouse_down = true;
             m.lines.push(vec![])
