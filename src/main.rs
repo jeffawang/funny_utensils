@@ -1,5 +1,4 @@
 use nannou::prelude::*;
-use rand;
 
 #[derive(Default)]
 struct Model {
@@ -27,22 +26,23 @@ fn update(_app: &App, m: &mut Model, _update: Update) {
     if m.mouse_down {
         m.lines.last_mut().unwrap().push(m.mouse);
     }
-    // tip is always at mouse
-    let tip = m.mouse;
-    // end is at previous tip + previous angle
-    let end = m.pmouse + pt2(1.0, 0.0).rotate(m.angle);
-    // rotate angle to the end is roughly in the same spot
-    m.angle += end.angle_between(tip).max(0.0);
-    // slowly try to get back to a target angle
-    let target = PI / 3.0;
-    m.angle += (target - m.angle) / 10.0;
+
+    // the target angle the pencil should be in if it were following the mouse
+    let target = match (m.pmouse - m.mouse).angle() {
+        f if f.is_nan() => PI / 3.0,
+        f => f,
+    };
+    let theta = (target - m.angle + PI) % TAU - PI;
+    m.angle += theta.clamp(-PI / 3.0, PI / 3.0) / 10.0;
+
+    // always update previous mouse
+    m.pmouse = m.mouse;
 }
 
 fn event(_app: &App, m: &mut Model, event: WindowEvent) {
     match event {
         ReceivedCharacter(_) => (),
         MouseMoved(p) => {
-            m.pmouse = m.mouse;
             m.mouse = p;
         }
         MousePressed(MouseButton::Left) => {
