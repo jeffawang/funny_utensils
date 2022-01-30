@@ -1,5 +1,4 @@
 use nannou::prelude::*;
-use rand;
 
 #[derive(Default)]
 struct Model {
@@ -23,28 +22,36 @@ fn main() {
     nannou::app(model).update(update).run();
 }
 
-fn update(_app: &App, m: &mut Model, _update: Update) {
+fn update(app: &App, m: &mut Model, _update: Update) {
+    let pmoved = m.pmouse != m.mouse;
+    m.pmouse = m.mouse;
+    m.mouse = app.mouse.position();
+    let moved = m.pmouse != m.mouse;
+
+    // stationary is debounced -- only true if mouse not moved for 2 frames.
+    let stationary = !moved && !pmoved;
+
     if m.mouse_down {
         m.lines.last_mut().unwrap().push(m.mouse);
     }
-    // tip is always at mouse
-    let tip = m.mouse;
-    // end is at previous tip + previous angle
-    let end = m.pmouse + pt2(1.0, 0.0).rotate(m.angle);
-    // rotate angle to the end is roughly in the same spot
-    m.angle += end.angle_between(tip).max(0.0);
-    // slowly try to get back to a target angle
-    let target = PI / 3.0;
-    m.angle += (target - m.angle) / 10.0;
+
+    let target;
+    if stationary {
+        target = PI / 3.0;
+    } else {
+        // the target angle the pencil should be in if it were following the mouse
+        target = match (m.pmouse - m.mouse).angle() {
+            f if f.is_nan() => m.angle,
+            f => f,
+        };
+    }
+    let theta = (target - m.angle + PI) % TAU - PI;
+    m.angle += theta.clamp(-PI / 3.0, PI / 3.0) / 5.0;
 }
 
 fn event(_app: &App, m: &mut Model, event: WindowEvent) {
     match event {
         ReceivedCharacter(_) => (),
-        MouseMoved(p) => {
-            m.pmouse = m.mouse;
-            m.mouse = p;
-        }
         MousePressed(MouseButton::Left) => {
             m.mouse_down = true;
             m.lines.push(vec![])
@@ -71,15 +78,7 @@ fn view(app: &App, model: &Model, frame: Frame) {
     {
         let draw = draw
             .translate(model.mouse.extend(0.0))
-            .translate(pt3(
-                0.0,
-                if model.mouse_down {
-                    -TIPHEIGHT / 4.0 / 2.0
-                } else {
-                    30.0
-                },
-                1.0,
-            ))
+            .translate(pt3(0.0, if model.mouse_down { 0.0 } else { 30.0 }, 1.0))
             .scale(0.4)
             .rotate(model.angle);
 
@@ -103,20 +102,23 @@ const TIPHEIGHT: f32 = 100.0;
 fn pencil(draw: &Draw) {
     // rotate draw to make it easier
     let draw = draw.rotate(-PI / 2.0);
+
+    // graphite tip
+    draw.quad().color(BLACK).points(
+        pt2(-WIDTH / 2.0 / 4.0, TIPHEIGHT / 4.0 / 2.0),
+        pt2(WIDTH / 2.0 / 4.0, TIPHEIGHT / 4.0 / 2.0),
+        pt2(WIDTH / 2.0 / 4.0 / 2.0, 0.0),
+        pt2(-WIDTH / 2.0 / 4.0 / 2.0, 0.0),
+    );
+
+    let draw = draw.translate(pt3(0.0, TIPHEIGHT / 4.0 / 2.0, 0.0));
+
     // pencil tip
     draw.quad().color(BLANCHEDALMOND).points(
         pt2(-WIDTH / 2.0, TIPHEIGHT),
         pt2(WIDTH / 2.0, TIPHEIGHT),
-        pt2(WIDTH / 2.0 / 4.0, TIPHEIGHT / 4.0),
-        pt2(-WIDTH / 2.0 / 4.0, TIPHEIGHT / 4.0),
-    );
-
-    // graphite tip
-    draw.quad().color(BLACK).points(
-        pt2(-WIDTH / 2.0 / 4.0, TIPHEIGHT / 4.0),
-        pt2(WIDTH / 2.0 / 4.0, TIPHEIGHT / 4.0),
-        pt2(WIDTH / 2.0 / 4.0 / 2.0, TIPHEIGHT / 4.0 / 2.0),
-        pt2(-WIDTH / 2.0 / 4.0 / 2.0, TIPHEIGHT / 4.0 / 2.0),
+        pt2(WIDTH / 2.0 / 4.0, 0.0),
+        pt2(-WIDTH / 2.0 / 4.0, 0.0),
     );
 
     // pencil body
